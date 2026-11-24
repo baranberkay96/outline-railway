@@ -58,7 +58,7 @@ On a fresh database Outline also exposes a "create workspace" endpoint that anyo
 
 **Scaling and versions.** Add Outline Worker replicas for heavy import or export loads. Keep one Outline web replica unless you set `REDIS_COLLABORATION_URL`. Images are pinned by digest in `services/outline/Dockerfile` and `services/dex/Dockerfile`. To upgrade, change the tag and digest, back up Postgres and redeploy; migrations run automatically.
 
-**Resources.** About 0.7–0.9 GB RAM idle in total (Outline ~0.4 GB, worker ~0.3 GB, Dex, Postgres and Redis under 0.1 GB each), roughly $8–10 per month plus Bucket storage. Hobby plan recommended.
+**Resources.** Measured idle on Railway: Outline 0.22–0.27 GB, worker 0.2–0.3 GB, Dex under 0.05 GB, Postgres 0.06–0.12 GB, Redis 0.04 GB; about 0.55–0.8 GB in total, roughly $6–8 per month plus Bucket storage. Every service fits the Trial plan's 1 GB; Hobby is recommended for teams.
 
 **License.** Outline is published under the Business Source License 1.1. You may self-host it for your own organisation; you may not offer it to third parties as a commercial "Document Service" (hosted Outline workspaces for other companies). Each release converts to Apache 2.0 four years after its date. This is a community template, not affiliated with General Outline, Inc.
 

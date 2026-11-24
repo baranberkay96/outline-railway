@@ -45,14 +45,25 @@
 
 ## Resources
 
-See the round-13 report for measured values (filled after the deploy test).
+Measured on Railway (2026-11-24, idle after login, documents, an upload and an export):
+
+| Service | Idle RAM | CPU idle |
+|---|---|---|
+| Outline | 0.22–0.27 GB | < 0.01 vCPU |
+| Outline Worker | 0.20–0.30 GB | < 0.01 |
+| Dex | 0.01–0.05 GB | < 0.01 |
+| Postgres | 0.06–0.12 GB | < 0.01 |
+| Redis | 0.04 GB | < 0.01 |
+
+Total ≈ 0.55–0.8 GB → ≈ $6–8/month idle RAM plus Bucket storage. All services fit Trial's 1 GB.
 
 ## Verification checklist
 
-- [ ] All services SUCCESS; `/_health` 200; pre-deploy log `workspace 'Outline' created`.
-- [ ] Stranger `installation.create` refused.
-- [ ] Dex login with the admin variables lands in Outline as admin; wrong password stays on Dex.
-- [ ] Document create + search; attachment PUT to the Bucket and read back; collection export completed by the worker.
+- [x] All services SUCCESS; `/_health` 200. Fresh deploy pre-deploy log: `Postgres reachable`, `Redis reachable`, `bucket CORS: rule applied`, `workspace 'Outline' created`. (First run: `fetch` followed Outline's post-sign-in redirect to the public URL and reported a 404; fixed by a raw HTTP call that treats 2xx/3xx plus a team row as success.)
+- [x] Stranger `installation.create` → 400 "Installation already has existing teams".
+- [x] Dex login with the admin variables → Outline `/home`, role admin; wrong password → 401 on Dex.
+- [x] Document create + full-text search; attachment presigned PUT to the Bucket (200, CORS header for the Outline origin) and read back byte-identical via `attachments.redirect`; collection export completed by the worker and downloaded as a zip.
+- [x] `DEX_EXTRA_USERS` with a valid entry, a short password and a non-e-mail: Dex SUCCESS; the valid user logs in as member, the short-password user is locked (401).
 
 ## Open questions
 
