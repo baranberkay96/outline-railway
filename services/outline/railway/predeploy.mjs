@@ -10,6 +10,7 @@
 import { spawn } from 'node:child_process';
 import { createHash, createHmac } from 'node:crypto';
 import { createRequire } from 'node:module';
+import http from 'node:http';
 import net from 'node:net';
 
 const APP = '/opt/outline';
@@ -172,6 +173,38 @@ async function teamCount() {
   }
 }
 
+function postLocal(path, payload) {
+  let host = 'localhost';
+  try {
+    host = new URL(env.URL).host;
+  } catch { /* keep localhost */ }
+  const body = JSON.stringify(payload);
+  return new Promise((resolve, reject) => {
+    const req = http.request({
+      host: '127.0.0.1',
+      port: Number(BOOT_PORT),
+      path,
+      method: 'POST',
+      timeout: 60000,
+      headers: {
+        host,
+        'content-type': 'application/json',
+        'content-length': Buffer.byteLength(body),
+        'x-forwarded-proto': 'https',
+        'x-forwarded-host': host,
+      },
+    }, res => {
+      let data = '';
+      res.setEncoding('utf8');
+      res.on('data', chunk => { data += chunk; });
+      res.on('end', () => resolve({ status: res.statusCode, location: res.headers.location, body: data }));
+    });
+    req.on('timeout', () => req.destroy(new Error('request timed out')));
+    req.on('error', reject);
+    req.end(body);
+  });
+}
+
 async function bootstrapWorkspace() {
   const existing = await teamCount();
   if (existing > 0) {
@@ -212,14 +245,11 @@ async function bootstrapWorkspace() {
       log('ERROR: the temporary Outline did not become healthy');
       return false;
     }
-    const res = await fetch(`${base}/api/installation.create`, {
-      method: 'POST',
-      headers: { 'content-type': 'application/json', 'x-forwarded-proto': 'https' },
-      body: JSON.stringify(values),
-      signal: AbortSignal.timeout(60000),
-    });
-    const text = await res.text();
-    if (res.ok) {
+    // Outline redirects requests whose Host is not URL's host; send the public
+    // host and scheme so the request is handled here and not redirected.
+    const res = await postLocal('/api/installation.create', values);
+    const text = res.body;
+    if (res.status === 200) {
       log(`workspace '${values.teamName}' created; admin ${values.userEmail}`);
       return true;
     }
@@ -227,7 +257,7 @@ async function bootstrapWorkspace() {
       log('workspace already exists; nothing to create');
       return true;
     }
-    log(`ERROR: installation.create answered ${res.status}: ${text.slice(0, 300)}`);
+    log(`ERROR: installation.create answered ${res.status}${res.location ? ` (redirect to ${res.location})` : ''}: ${text.slice(0, 300)}`);
     return false;
   } finally {
     await stop();
