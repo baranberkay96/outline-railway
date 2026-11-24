@@ -1,5 +1,7 @@
 # Deploy and Host Outline with Railway
 
+[![Deploy on Railway](https://railway.com/button.svg)](https://railway.com/deploy/outline-113-team-wiki-with-built-in-logi?referralCode=20H68q)
+
 Outline is a fast, collaborative knowledge base for teams: nested documents, real-time editing, Markdown shortcuts, search, comments and a public sharing option. This template runs Outline 1.13 with a background worker, PostgreSQL 18, Redis, a Railway Bucket for files and a small login service, so you can sign in right after the first deploy.
 
 ## About Hosting Outline
