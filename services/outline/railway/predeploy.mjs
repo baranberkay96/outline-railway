@@ -249,7 +249,8 @@ async function bootstrapWorkspace() {
     // host and scheme so the request is handled here and not redirected.
     const res = await postLocal('/api/installation.create', values);
     const text = res.body;
-    if (res.status === 200) {
+    // On success Outline signs the caller in and redirects to the workspace.
+    if (res.status >= 200 && res.status < 400 && (await teamCount()) > 0) {
       log(`workspace '${values.teamName}' created; admin ${values.userEmail}`);
       return true;
     }
