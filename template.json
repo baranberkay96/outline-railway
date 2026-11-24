@@ -1,0 +1,609 @@
+{
+  "name": "Outline 1.13 Team Wiki with Built-in Login (Postgres, Redis, S3)",
+  "idSeed": "Outline 1.13 Team Wiki with Built-in Login (Postgres, Redis, S3)",
+  "description": "Team knowledge base with e-mail login, job worker, Postgres and Bucket.",
+  "category": "Other",
+  "tags": [
+    "outline",
+    "wiki",
+    "knowledge-base",
+    "notion-alternative",
+    "documentation",
+    "postgres",
+    "redis",
+    "self-hosted"
+  ],
+  "image": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/outline.svg",
+  "upstream": {
+    "repo": "outline/outline",
+    "version": "1.13.0",
+    "license": "BSL 1.1 (Additional Use Grant: no Document Service; Apache 2.0 from 2030-11-15)",
+    "images": {
+      "outline": "outlinewiki/outline:1.13.0@sha256:4583bb244dbb4464d8a632c75044d3b2f9fe44382b6a4b84d97995f473b823e4 (released 2026-11-15)",
+      "dex": "dexidp/dex:v2.46.1-alpine@sha256:65b72ca0f4b0bf6d4ada84ec21da8851782563404ac7b8f926923d27ceced9ab (released 2026-10-21)",
+      "postgres": "ghcr.io/railwayapp-templates/postgres-ssl:18.6@sha256:4fc833b43d2aaf6ecc9b18615f5533602b723a32d0e2efe2dae8ca0f7217c863",
+      "redis": "redis:8.2.11@sha256:b0b01167ff47bc3868e56a967895a26be4230891a1f42a78ab61cdd227accc8d"
+    },
+    "checked": "2026-11-24"
+  },
+  "services": {
+    "Outline": {
+      "icon": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/outline.svg",
+      "source": {
+        "repo": "baranberkay96/outline-railway",
+        "rootDirectory": "/services/outline"
+      },
+      "startCommand": null,
+      "preDeployCommand": "node /opt/outline/railway/predeploy.mjs",
+      "preDeployTimeoutSeconds": 1500,
+      "healthcheckPath": "/_health",
+      "healthcheckTimeout": 600,
+      "restartPolicyType": "ALWAYS",
+      "numReplicas": 1,
+      "cronSchedule": null,
+      "publicDomain": true,
+      "targetPort": 3000,
+      "tcpProxy": null,
+      "volume": null,
+      "variables": {
+        "PORT": {
+          "defaultValue": "3000",
+          "description": "Port Outline listens on.",
+          "required": false
+        },
+        "NODE_ENV": {
+          "defaultValue": "production",
+          "description": "Run Outline in production mode.",
+          "required": false
+        },
+        "URL": {
+          "defaultValue": "https://${{RAILWAY_PUBLIC_DOMAIN}}",
+          "description": "Public URL of Outline. Change it (and redeploy Dex) when you add a custom domain.",
+          "required": false
+        },
+        "SERVICES": {
+          "defaultValue": "web,websockets,collaboration",
+          "description": "Outline services in this container; background jobs run in Outline Worker.",
+          "required": false
+        },
+        "WEB_CONCURRENCY": {
+          "defaultValue": "1",
+          "description": "Web processes (the collaboration service needs 1 without REDIS_COLLABORATION_URL).",
+          "required": false
+        },
+        "SECRET_KEY": {
+          "defaultValue": "${{secret(64, \"abcdef0123456789\")}}",
+          "description": "Encrypts sessions and secrets (32-byte hex). Never change it after the first start.",
+          "required": false
+        },
+        "UTILS_SECRET": {
+          "defaultValue": "${{secret(64, \"abcdef0123456789\")}}",
+          "description": "Secret for Outline's internal utility endpoints.",
+          "required": false
+        },
+        "DATABASE_URL": {
+          "defaultValue": "postgres://${{Postgres.POSTGRES_USER}}:${{Postgres.POSTGRES_PASSWORD}}@${{Postgres.RAILWAY_PRIVATE_DOMAIN}}:5432/${{Postgres.POSTGRES_DB}}",
+          "description": "Postgres on the private network.",
+          "required": false
+        },
+        "PGSSLMODE": {
+          "defaultValue": "disable",
+          "description": "Private network traffic needs no TLS (Railway's Postgres certificate is self-signed).",
+          "required": false
+        },
+        "REDIS_URL": {
+          "defaultValue": "${{Redis.REDIS_URL}}",
+          "description": "Redis for queues, websockets and caching.",
+          "required": false
+        },
+        "FILE_STORAGE": {
+          "defaultValue": "s3",
+          "description": "Store attachments, avatars and imports in the Railway Bucket.",
+          "required": false
+        },
+        "AWS_S3_UPLOAD_BUCKET_URL": {
+          "defaultValue": "${{Bucket.ENDPOINT}}",
+          "description": "Bucket endpoint.",
+          "required": false
+        },
+        "AWS_S3_UPLOAD_BUCKET_NAME": {
+          "defaultValue": "${{Bucket.BUCKET}}",
+          "description": "Bucket name.",
+          "required": false
+        },
+        "AWS_ACCESS_KEY_ID": {
+          "defaultValue": "${{Bucket.ACCESS_KEY_ID}}",
+          "description": "Bucket access key.",
+          "required": false
+        },
+        "AWS_SECRET_ACCESS_KEY": {
+          "defaultValue": "${{Bucket.SECRET_ACCESS_KEY}}",
+          "description": "Bucket secret key.",
+          "required": false
+        },
+        "AWS_REGION": {
+          "defaultValue": "${{Bucket.REGION}}",
+          "description": "Bucket region.",
+          "required": false
+        },
+        "AWS_S3_FORCE_PATH_STYLE": {
+          "defaultValue": "false",
+          "description": "Railway Buckets use virtual-hosted-style URLs.",
+          "required": false
+        },
+        "AWS_S3_UPLOAD_METHOD": {
+          "defaultValue": "put",
+          "description": "Browsers upload with presigned PUT requests.",
+          "required": false
+        },
+        "FILE_STORAGE_UPLOAD_MAX_SIZE": {
+          "defaultValue": "262144000",
+          "description": "Largest attachment in bytes (250 MB).",
+          "required": false
+        },
+        "BUCKET_CORS_ENABLED": {
+          "defaultValue": "true",
+          "description": "Pre-deploy sets the Bucket CORS rule that browser uploads need (origin: URL).",
+          "required": false
+        },
+        "OUTLINE_ADMIN_EMAIL": {
+          "defaultValue": "admin@${{RAILWAY_PUBLIC_DOMAIN}}",
+          "description": "E-mail of the first admin and their login name. Put your own address here before the first deploy.",
+          "required": false
+        },
+        "OUTLINE_ADMIN_PASSWORD": {
+          "defaultValue": "${{secret(24, \"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789\")}}",
+          "description": "Admin password for the login page (12+ characters). Change it here and redeploy Dex.",
+          "required": false
+        },
+        "OUTLINE_ADMIN_NAME": {
+          "defaultValue": "Admin",
+          "description": "Display name of the first admin.",
+          "required": false
+        },
+        "OUTLINE_WORKSPACE_NAME": {
+          "defaultValue": "Outline",
+          "description": "Name of the workspace created on the first deploy.",
+          "required": false
+        },
+        "OIDC_CLIENT_ID": {
+          "defaultValue": "${{Dex.OIDC_CLIENT_ID}}",
+          "description": "OAuth client id shared with Dex.",
+          "required": false
+        },
+        "OIDC_CLIENT_SECRET": {
+          "defaultValue": "${{Dex.OIDC_CLIENT_SECRET}}",
+          "description": "OAuth client secret shared with Dex.",
+          "required": false
+        },
+        "OIDC_AUTH_URI": {
+          "defaultValue": "${{Dex.DEX_ISSUER}}/auth",
+          "description": "Dex login page (public).",
+          "required": false
+        },
+        "OIDC_TOKEN_URI": {
+          "defaultValue": "http://${{Dex.RAILWAY_PRIVATE_DOMAIN}}:${{Dex.PORT}}/token",
+          "description": "Dex token endpoint (private network).",
+          "required": false
+        },
+        "OIDC_USERINFO_URI": {
+          "defaultValue": "http://${{Dex.RAILWAY_PRIVATE_DOMAIN}}:${{Dex.PORT}}/userinfo",
+          "description": "Dex userinfo endpoint (private network).",
+          "required": false
+        },
+        "OIDC_DISPLAY_NAME": {
+          "defaultValue": "Email and password",
+          "description": "Label of the sign-in button.",
+          "required": false
+        },
+        "OIDC_SCOPES": {
+          "defaultValue": "openid profile email",
+          "description": "Scopes requested from Dex.",
+          "required": false
+        },
+        "DEFAULT_LANGUAGE": {
+          "defaultValue": "en_US",
+          "description": "Default interface language (e.g. de_DE, fr_FR, tr_TR).",
+          "required": false
+        },
+        "FORCE_HTTPS": {
+          "defaultValue": "true",
+          "description": "Redirect plain HTTP to HTTPS (Railway terminates TLS).",
+          "required": false
+        },
+        "ENABLE_UPDATES": {
+          "defaultValue": "false",
+          "description": "true: send anonymous usage statistics to Outline and check for updates.",
+          "required": false
+        },
+        "RATE_LIMITER_ENABLED": {
+          "defaultValue": "true",
+          "description": "Per-IP API rate limiting.",
+          "required": false
+        },
+        "SMTP_HOST": {
+          "defaultValue": "",
+          "description": "Optional SMTP host for notification e-mails and e-mail sign-in (Railway allows SMTP on Pro).",
+          "required": false
+        },
+        "SMTP_PORT": {
+          "defaultValue": "",
+          "description": "Optional SMTP port.",
+          "required": false
+        },
+        "SMTP_USERNAME": {
+          "defaultValue": "",
+          "description": "Optional SMTP user name.",
+          "required": false
+        },
+        "SMTP_PASSWORD": {
+          "defaultValue": "",
+          "description": "Optional SMTP password.",
+          "required": false
+        },
+        "SMTP_FROM_EMAIL": {
+          "defaultValue": "",
+          "description": "Optional sender address for e-mails.",
+          "required": false
+        },
+        "RAILWAY_DEPLOYMENT_DRAINING_SECONDS": {
+          "defaultValue": "30",
+          "description": "Grace period for open requests on redeploy.",
+          "required": false
+        }
+      }
+    },
+    "Outline Worker": {
+      "icon": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/outline.svg",
+      "source": {
+        "repo": "baranberkay96/outline-railway",
+        "rootDirectory": "/services/outline"
+      },
+      "startCommand": null,
+      "preDeployCommand": null,
+      "healthcheckPath": "/_health",
+      "healthcheckTimeout": 900,
+      "restartPolicyType": "ALWAYS",
+      "numReplicas": 1,
+      "cronSchedule": null,
+      "publicDomain": false,
+      "targetPort": null,
+      "tcpProxy": null,
+      "volume": null,
+      "variables": {
+        "PORT": {
+          "defaultValue": "3000",
+          "description": "Port of the worker's health endpoint (private).",
+          "required": false
+        },
+        "SERVICES": {
+          "defaultValue": "worker",
+          "description": "Run Outline's background job worker (imports, exports, notifications, cleanup).",
+          "required": false
+        },
+        "NODE_ENV": {
+          "defaultValue": "${{Outline.NODE_ENV}}",
+          "description": "Run Outline in production mode.",
+          "required": false
+        },
+        "URL": {
+          "defaultValue": "${{Outline.URL}}",
+          "description": "Public URL of Outline. Change it (and redeploy Dex) when you add a custom domain.",
+          "required": false
+        },
+        "WEB_CONCURRENCY": {
+          "defaultValue": "${{Outline.WEB_CONCURRENCY}}",
+          "description": "Web processes (the collaboration service needs 1 without REDIS_COLLABORATION_URL).",
+          "required": false
+        },
+        "SECRET_KEY": {
+          "defaultValue": "${{Outline.SECRET_KEY}}",
+          "description": "Encrypts sessions and secrets (32-byte hex). Never change it after the first start.",
+          "required": false
+        },
+        "UTILS_SECRET": {
+          "defaultValue": "${{Outline.UTILS_SECRET}}",
+          "description": "Secret for Outline's internal utility endpoints.",
+          "required": false
+        },
+        "DATABASE_URL": {
+          "defaultValue": "${{Outline.DATABASE_URL}}",
+          "description": "Postgres on the private network.",
+          "required": false
+        },
+        "PGSSLMODE": {
+          "defaultValue": "${{Outline.PGSSLMODE}}",
+          "description": "Private network traffic needs no TLS (Railway's Postgres certificate is self-signed).",
+          "required": false
+        },
+        "REDIS_URL": {
+          "defaultValue": "${{Outline.REDIS_URL}}",
+          "description": "Redis for queues, websockets and caching.",
+          "required": false
+        },
+        "FILE_STORAGE": {
+          "defaultValue": "${{Outline.FILE_STORAGE}}",
+          "description": "Store attachments, avatars and imports in the Railway Bucket.",
+          "required": false
+        },
+        "AWS_S3_UPLOAD_BUCKET_URL": {
+          "defaultValue": "${{Outline.AWS_S3_UPLOAD_BUCKET_URL}}",
+          "description": "Bucket endpoint.",
+          "required": false
+        },
+        "AWS_S3_UPLOAD_BUCKET_NAME": {
+          "defaultValue": "${{Outline.AWS_S3_UPLOAD_BUCKET_NAME}}",
+          "description": "Bucket name.",
+          "required": false
+        },
+        "AWS_ACCESS_KEY_ID": {
+          "defaultValue": "${{Outline.AWS_ACCESS_KEY_ID}}",
+          "description": "Bucket access key.",
+          "required": false
+        },
+        "AWS_SECRET_ACCESS_KEY": {
+          "defaultValue": "${{Outline.AWS_SECRET_ACCESS_KEY}}",
+          "description": "Bucket secret key.",
+          "required": false
+        },
+        "AWS_REGION": {
+          "defaultValue": "${{Outline.AWS_REGION}}",
+          "description": "Bucket region.",
+          "required": false
+        },
+        "AWS_S3_FORCE_PATH_STYLE": {
+          "defaultValue": "${{Outline.AWS_S3_FORCE_PATH_STYLE}}",
+          "description": "Railway Buckets use virtual-hosted-style URLs.",
+          "required": false
+        },
+        "AWS_S3_UPLOAD_METHOD": {
+          "defaultValue": "${{Outline.AWS_S3_UPLOAD_METHOD}}",
+          "description": "Browsers upload with presigned PUT requests.",
+          "required": false
+        },
+        "FILE_STORAGE_UPLOAD_MAX_SIZE": {
+          "defaultValue": "${{Outline.FILE_STORAGE_UPLOAD_MAX_SIZE}}",
+          "description": "Largest attachment in bytes (250 MB).",
+          "required": false
+        },
+        "DEFAULT_LANGUAGE": {
+          "defaultValue": "${{Outline.DEFAULT_LANGUAGE}}",
+          "description": "Default interface language (e.g. de_DE, fr_FR, tr_TR).",
+          "required": false
+        },
+        "ENABLE_UPDATES": {
+          "defaultValue": "${{Outline.ENABLE_UPDATES}}",
+          "description": "true: send anonymous usage statistics to Outline and check for updates.",
+          "required": false
+        },
+        "SMTP_HOST": {
+          "defaultValue": "${{Outline.SMTP_HOST}}",
+          "description": "Optional SMTP host for notification e-mails and e-mail sign-in (Railway allows SMTP on Pro).",
+          "required": false
+        },
+        "SMTP_PORT": {
+          "defaultValue": "${{Outline.SMTP_PORT}}",
+          "description": "Optional SMTP port.",
+          "required": false
+        },
+        "SMTP_USERNAME": {
+          "defaultValue": "${{Outline.SMTP_USERNAME}}",
+          "description": "Optional SMTP user name.",
+          "required": false
+        },
+        "SMTP_PASSWORD": {
+          "defaultValue": "${{Outline.SMTP_PASSWORD}}",
+          "description": "Optional SMTP password.",
+          "required": false
+        },
+        "SMTP_FROM_EMAIL": {
+          "defaultValue": "${{Outline.SMTP_FROM_EMAIL}}",
+          "description": "Optional sender address for e-mails.",
+          "required": false
+        },
+        "RAILWAY_DEPLOYMENT_DRAINING_SECONDS": {
+          "defaultValue": "120",
+          "description": "Lets running jobs finish on redeploy.",
+          "required": false
+        }
+      }
+    },
+    "Dex": {
+      "icon": "https://cdn.jsdelivr.net/gh/dexidp/dex@v2.46.1/web/themes/light/logo.png",
+      "source": {
+        "repo": "baranberkay96/outline-railway",
+        "rootDirectory": "/services/dex"
+      },
+      "startCommand": null,
+      "preDeployCommand": null,
+      "healthcheckPath": "/.well-known/openid-configuration",
+      "healthcheckTimeout": 300,
+      "restartPolicyType": "ALWAYS",
+      "numReplicas": 1,
+      "cronSchedule": null,
+      "publicDomain": true,
+      "targetPort": 5556,
+      "tcpProxy": null,
+      "volume": null,
+      "variables": {
+        "PORT": {
+          "defaultValue": "5556",
+          "description": "Port Dex listens on.",
+          "required": false
+        },
+        "DEX_ISSUER": {
+          "defaultValue": "https://${{RAILWAY_PUBLIC_DOMAIN}}",
+          "description": "Public URL of the Dex login service.",
+          "required": false
+        },
+        "OUTLINE_URL": {
+          "defaultValue": "${{Outline.URL}}",
+          "description": "Outline's public URL (allowed redirect).",
+          "required": false
+        },
+        "OIDC_CLIENT_ID": {
+          "defaultValue": "outline",
+          "description": "OAuth client id for Outline.",
+          "required": false
+        },
+        "OIDC_CLIENT_SECRET": {
+          "defaultValue": "${{secret(40, \"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789\")}}",
+          "description": "OAuth client secret shared with Outline.",
+          "required": false
+        },
+        "OUTLINE_ADMIN_EMAIL": {
+          "defaultValue": "${{Outline.OUTLINE_ADMIN_EMAIL}}",
+          "description": "Admin login (from the Outline service).",
+          "required": false
+        },
+        "OUTLINE_ADMIN_PASSWORD": {
+          "defaultValue": "${{Outline.OUTLINE_ADMIN_PASSWORD}}",
+          "description": "Admin password (from the Outline service).",
+          "required": false
+        },
+        "DEX_EXTRA_USERS": {
+          "defaultValue": "",
+          "description": "More logins, comma-separated email:password pairs (12+ character passwords, no spaces or commas). Redeploy Dex after a change.",
+          "required": false
+        }
+      }
+    },
+    "Postgres": {
+      "icon": "https://devicons.railway.app/i/postgresql.svg",
+      "source": {
+        "image": "ghcr.io/railwayapp-templates/postgres-ssl:18.6@sha256:4fc833b43d2aaf6ecc9b18615f5533602b723a32d0e2efe2dae8ca0f7217c863"
+      },
+      "startCommand": null,
+      "preDeployCommand": null,
+      "healthcheckPath": null,
+      "healthcheckTimeout": null,
+      "restartPolicyType": "ON_FAILURE",
+      "restartPolicyMaxRetries": 10,
+      "numReplicas": 1,
+      "cronSchedule": null,
+      "publicDomain": false,
+      "targetPort": null,
+      "tcpProxy": null,
+      "volume": {
+        "mountPath": "/var/lib/postgresql/data"
+      },
+      "variables": {
+        "PGDATA": {
+          "defaultValue": "/var/lib/postgresql/data/pgdata",
+          "description": "Location where the database will be initialized",
+          "required": false
+        },
+        "PGHOST": {
+          "defaultValue": "${{RAILWAY_PRIVATE_DOMAIN}}",
+          "description": "Railway Private Domain Name.",
+          "required": false
+        },
+        "PGPORT": {
+          "defaultValue": "5432",
+          "description": "Port to connect to Postgres.",
+          "required": false
+        },
+        "PGUSER": {
+          "defaultValue": "${{ POSTGRES_USER }}",
+          "description": "Required variable for Data panel",
+          "required": false
+        },
+        "PGDATABASE": {
+          "defaultValue": "${{POSTGRES_DB}}",
+          "description": "Required variable for the data panel.",
+          "required": false
+        },
+        "PGPASSWORD": {
+          "defaultValue": "${{POSTGRES_PASSWORD}}",
+          "description": "Required variable for Data panel",
+          "required": false
+        },
+        "POSTGRES_DB": {
+          "defaultValue": "railway",
+          "description": "Default database created when image is started.",
+          "required": false
+        },
+        "DATABASE_URL": {
+          "defaultValue": "postgresql://${{PGUSER}}:${{POSTGRES_PASSWORD}}@${{RAILWAY_PRIVATE_DOMAIN}}:5432/${{PGDATABASE}}",
+          "description": "Private connection URL (Outline builds its own from the parts).",
+          "required": false
+        },
+        "POSTGRES_USER": {
+          "defaultValue": "postgres",
+          "description": "User to connect to Postgres DB",
+          "required": false
+        },
+        "SSL_CERT_DAYS": {
+          "defaultValue": "820",
+          "description": "SSL certificate expiry in days.",
+          "required": false
+        },
+        "POSTGRES_PASSWORD": {
+          "defaultValue": "${{ secret(32, \"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ\") }}",
+          "description": "Password to connect to DB",
+          "required": false
+        },
+        "RAILWAY_DEPLOYMENT_DRAINING_SECONDS": {
+          "defaultValue": "60",
+          "description": "Allow Postgres to cleanly shut down",
+          "required": false
+        }
+      }
+    },
+    "Redis": {
+      "icon": "https://cdn.sanity.io/images/sy1jschh/production/0ce0bfdcfbdbf69662b1116671f97c2dd788b655-157x157.svg",
+      "source": {
+        "image": "redis:8.2.11@sha256:b0b01167ff47bc3868e56a967895a26be4230891a1f42a78ab61cdd227accc8d"
+      },
+      "startCommand": "/bin/sh -c \"rm -rf $RAILWAY_VOLUME_MOUNT_PATH/lost+found/ && exec docker-entrypoint.sh redis-server --requirepass $REDIS_PASSWORD --save 60 1 --dir $RAILWAY_VOLUME_MOUNT_PATH\"",
+      "preDeployCommand": null,
+      "healthcheckPath": null,
+      "healthcheckTimeout": null,
+      "restartPolicyType": "ON_FAILURE",
+      "restartPolicyMaxRetries": 10,
+      "numReplicas": 1,
+      "cronSchedule": null,
+      "publicDomain": false,
+      "targetPort": null,
+      "tcpProxy": null,
+      "volume": {
+        "mountPath": "/data"
+      },
+      "variables": {
+        "REDISHOST": {
+          "defaultValue": "${{RAILWAY_PRIVATE_DOMAIN}}",
+          "description": "Private network hostname of the Redis service.",
+          "required": false
+        },
+        "REDISPORT": {
+          "defaultValue": "6379",
+          "description": "Port that Redis listens on.",
+          "required": false
+        },
+        "REDISUSER": {
+          "defaultValue": "default",
+          "description": "Username for authenticating with Redis.",
+          "required": false
+        },
+        "REDIS_PASSWORD": {
+          "defaultValue": "${{ secret(32, \"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ\") }}",
+          "description": "Randomly generated password for authenticating with Redis.",
+          "required": false
+        },
+        "REDISPASSWORD": {
+          "defaultValue": "${{REDIS_PASSWORD}}",
+          "description": "Alias of REDIS_PASSWORD.",
+          "required": false
+        },
+        "REDIS_URL": {
+          "defaultValue": "redis://${{ REDISUSER }}:${{ REDIS_PASSWORD }}@${{ REDISHOST }}:${{ REDISPORT }}",
+          "description": "Private connection URL used by Outline.",
+          "required": false
+        }
+      }
+    }
+  },
+  "buckets": [
+    "Bucket"
+  ]
+}
